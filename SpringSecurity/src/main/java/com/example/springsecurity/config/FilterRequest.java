@@ -31,14 +31,7 @@ public class FilterRequest extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         try {
-            if(request.getRequestURI().startsWith("/login")){
-                /*
-                * Vì ở SecurityConfig cấu hình requestMatchers("/login").permitAll() nên request này sẽ được cấp quyền
-                * mà không cần tạo user security mặc dù có dòng cấu hình anyRequest().authenticated() */
-
-                filterChain.doFilter(request, response);
-
-            } else if (request.getHeader("api-key").equals(keySecret)) {     // Tạo 1 key đơn giản gán vào header nếu không có thì sẽ trả về 401
+            if (request.getHeader("api-key") != null && request.getHeader("api-key").equals(keySecret)) {     // Tạo 1 key đơn giản gán vào header nếu không có thì sẽ trả về 401
                 log.info("Nếu key hợp lệ tạo một user để phân quyền sử dụng api, get key từ header api-key: " + request.getHeader("api-key"));
 
                 /*  Vì ở SecurityConfig cấu hình anyRequest().authenticated() nên bất kì request nào tới cũng phải cần phải cấp quyền bằng 1 user security */
@@ -52,12 +45,14 @@ public class FilterRequest extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 log.info("User phân quyền được tạo: " + SecurityContextHolder.getContext().getAuthentication().toString());
 
-                filterChain.doFilter(request, response);
             }
+
+            filterChain.doFilter(request, response);
         } catch (Exception ex) {
             log.error("failed on set user authentication", ex);
-            response.sendError(401,"Không có quyền !");
+            response.sendError(401, "Không có quyền !");
         }
 
     }
+
 }
